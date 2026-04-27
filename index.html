@@ -1,318 +1,248 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MP3再生リスト（ページネーション上下表示）</title>
-    <style>
-        body {
-            font-family: "Hiragino Kaku Gothic Pro", "Noto Sans JP", sans-serif;
-            padding: 20px;
-            margin: 0;
-            line-height: 1.6;
-            color: #333;
-        }
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .center-text {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        .container {
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-        }
-        .mp3-item {
-            margin-bottom: 20px;
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            align-items: center;
-            background: #fff;
-        }
-        .mp3-content {
-            flex-grow: 1;
-        }
-        .mp3-item h3 {
-            font-size: 16px;
-            margin: 0 0 10px 0;
-        }
-        audio {
-            width: 100%;
-        }
-        .status {
-            color: #d9534f;
-            font-weight: bold;
-            margin-top: 5px;
-            font-size: 14px;
-        }
-        /* お気に入りスタイル */
-        .favorite-box {
-            margin-left: 15px;
-        }
-        .favorite-box label {
-            cursor: pointer;
-            font-size: 28px;
-        }
-        .favorite-box input[type="checkbox"] + label:before {
-            content: '☆';
-            color: #ccc;
-        }
-        .favorite-box input[type="checkbox"]:checked + label:before {
-            content: '★';
-            color: #f1c40f;
-        }
-        .favorite-box input[type="checkbox"] {
-            display: none;
-        }
-        /* ページネーション */
-        .pagination {
-            text-align: center;
-            padding: 10px 0;
-            overflow-x: auto;
-            white-space: nowrap;
-            margin-bottom: 15px;
-        }
-        .pagination button {
-            background-color: #f8f9fa;
-            border: 1px solid #ccc;
-            padding: 8px 14px;
-            margin: 0 2px;
-            cursor: pointer;
-            font-weight: bold;
-            color: #000;
-            border-radius: 4px;
-        }
-        .pagination button:hover:not(.active) {
-            background-color: #e2e6ea;
-        }
-        .pagination button.active {
-            background-color: #007bff;
-            color: white;
-            border-color: #007bff;
-        }
-        .info-image {
-            display: block;
-            margin: 20px auto;
-            max-width: 100%;
-            height: auto;
-        }
-        .footer-section {
-            text-align: center;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 2px solid #eee;
-        }
-    </style>
-</head>
-<body>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ゆるスイカゲーム 体操レク版</title>
 
-<img src="https://life-supporter.jp/sp/hxySQ4ff/ct5NJq8Z/images/XS012099.jpg" class="info-image">
+<style>
+body{
+  font-family:sans-serif;
+  text-align:center;
+  background:#f9f9f9;
+}
 
-<h2>再生するまでの準備時間があります。少しお待ちください。</h2>
-<div class="center-text">３００曲の内の１５曲を選んでみました。</div>
+canvas{
+  border:4px solid #eee;
+  border-radius:10px;
+  background:#fff;
+  max-width:95vw; /* スマホ画面に収まるよう調整 */
+}
 
-<h2 id="mainTitle">MP3再生リスト</h2>
+#score{
+  font-size:28px;
+  margin:10px;
+  color:#ff9f1c;
+  font-weight:bold;
+}
 
-<div class="pagination top" id="paginationControlsTop"></div>
-<div class="center-text"><small>上部をスライドしてリストを選択してください。</small></div>
+#timer{
+  font-size:22px;
+  margin:6px;
+  color:#333;
+  font-weight:bold;
+}
 
-<div class="container" id="mp3Container"></div>
+#exerciseText{
+  font-size:18px;
+}
 
-<div class="pagination bottom" id="paginationControlsBottom"></div>
-<div class="center-text"><small>スライドしてページを切り替えられます。</small></div>
+#exercise{
+  background:#fff;
+  padding:20px;
+  border-radius:15px;
+  margin-top:10px;
+}
 
-<script>
-    const mp3Data = [
-        ["軽快でお洒落な電子ピアノのテクノポップス", "103.mp3"],
-        ["ゆったりとしたオーケストラ楽曲", "105.mp3"],
-        ["美しいピアノメロディー", "117.mp3"],
-        ["落ち着いた雰囲気の大人なジャズ", "127.mp3"],
-        ["神秘的で温もりのある美しいヒーリング", "146.mp3"],
-        ["切なく美しいバイオリンピアノサウンド", "158.mp3"],
-        ["バイオリンクラシック", "168.mp3"],
-        ["水辺にいるようなヒーリング系ストリングス", "177.mp3"],
-        ["お洒落なピアノシンセ", "187.mp3"],
-        ["壮大で可愛らしいミュージック", "197.mp3"],
-        ["大人な雰囲気のスロージャズバラード", "210.mp3"],
-        ["キュートでかわいいメロディのポップス", "222.mp3"],
-        ["スウィートでウォームなバラード", "235.mp3"],
-        ["上品 おしゃれ ムード 穏やか 大人", "251.mp3"],
-        ["苦悩をこえて、愛がかなう。ラストシーン", "399.mp3"]
-    ];
+button{
+  padding:10px 20px; /* 少し小さくしてスマホで1行に収まる */
+  font-size:16px; /* 文字サイズを少し縮小 */
+  border:none;
+  border-radius:25px;
+  cursor:pointer;
+}
 
-    const baseUrl = "https://life-supporter.jp/sp/hxySQ4ff/VjDWurLR/images/MP3/";
-    const mainTitle = document.getElementById("mainTitle");
-    const container = document.getElementById("mp3Container");
-    const paginationControlsTop = document.getElementById("paginationControlsTop");
-    const paginationControlsBottom = document.getElementById("paginationControlsBottom");
-    const FAVORITES_KEY = "mp3Favorites";
+#startBtn{background:#ff9f1c;color:white;}
+#stopGameBtn{background:#333;color:white;}
+#dropBtn{background:#ff4b4b;color:white;}
+#modeBtn{background:#1982c4;color:white;}
+#randomBtn{background:#8ac926;color:white;}
+#stopBtn{background:#6c757d;color:white;}
+#resetBtn{background:#ff6f91;color:white;}
 
-    const ITEMS_PER_PAGE = 5;
-    const TOTAL_PAGES = Math.ceil(mp3Data.length / ITEMS_PER_PAGE);
-    let currentPage = 1;
+.slider{width:220px;}
+</style>
+<img src="https://life-supporter.jp/sp/hxySQ4ff/ct5NJq8Z/images/XS012099.jpg" style="display: block; margin: auto;">
 
-    function loadFavorites() {
-        try {
-            const stored = localStorage.getItem(FAVORITES_KEY);
-            return stored ? JSON.parse(stored) : {};
-        } catch (e) { return {}; }
-    }
+<h2>ゆるスイカゲーム</h2>
 
-    function saveFavorites(favorites) {
-        try {
-            localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
-        } catch (e) { console.error(e); }
-    }
+<div id="score">Score:0</div>
 
-    let favorites = loadFavorites();
+<canvas id="world"></canvas>
 
-    function handlePlayAttempt(audioElement, statusElement) {
-        if (audioElement.readyState >= 4) {
-            audioElement.play().catch(e => {});
-            statusElement.textContent = '';
-            return;
-        }
-        statusElement.textContent = '⌛ 準備中...';
-        audioElement.controls = false;
-        
-        const canplaythroughHandler = () => {
-            statusElement.textContent = '✅ 再生準備完了';
-            audioElement.controls = true;
-            audioElement.removeEventListener('canplaythrough', canplaythroughHandler);
-            audioElement.play().catch(e => {
-                statusElement.textContent = '✅ 再生準備完了 (再生ボタンを押してください)';
-            });
-        };
-        audioElement.addEventListener('canplaythrough', canplaythroughHandler);
-        audioElement.load();
-    }
+<div id="exercise">
 
-    function displayList(page) {
-        container.innerHTML = '';
-        const start = (page - 1) * ITEMS_PER_PAGE;
-        const end = start + ITEMS_PER_PAGE;
-        const pageData = mp3Data.slice(start, end);
+<div id="timer">残り時間:0:00</div>
 
-        pageData.forEach(([title, filename], index) => {
-            const item = document.createElement("div");
-            item.className = "mp3-item";
-            
-            const contentDiv = document.createElement("div");
-            contentDiv.className = "mp3-content";
+<p id="exerciseText">通常・自動モード／順番・ランダムモードを選択してスタートを押してください</p>
 
-            const titleElem = document.createElement("h3");
-            titleElem.textContent = `${start + index + 1}. ${title}`;
-
-            const audio = document.createElement("audio");
-            audio.controls = true;
-            audio.setAttribute('controlsList', 'nodownload');
-            audio.oncontextmenu = () => false;
-            
-            const source = document.createElement("source");
-            source.src = baseUrl + filename;
-            source.type = "audio/mpeg";
-            audio.appendChild(source);
-            
-            const statusDiv = document.createElement("div");
-            statusDiv.className = "status";
-            
-            audio.addEventListener('play', (e) => {
-                document.querySelectorAll('audio').forEach(a => {
-                    if (a !== audio && !a.paused) a.pause();
-                });
-                handlePlayAttempt(audio, statusDiv);
-            });
-
-            contentDiv.appendChild(titleElem);
-            contentDiv.appendChild(audio);
-            contentDiv.appendChild(statusDiv);
-
-            const favoriteBox = document.createElement("div");
-            favoriteBox.className = "favorite-box";
-            const checkboxId = `fav-${start + index}`;
-            const checkbox = document.createElement("input");
-            checkbox.type = "checkbox";
-            checkbox.id = checkboxId;
-            checkbox.checked = favorites[filename] || false;
-
-            const label = document.createElement("label");
-            label.htmlFor = checkboxId;
-
-            checkbox.addEventListener('change', (e) => {
-                favorites[filename] = e.target.checked;
-                saveFavorites(favorites);
-            });
-
-            favoriteBox.appendChild(checkbox);
-            favoriteBox.appendChild(label);
-            item.appendChild(contentDiv);
-            item.appendChild(favoriteBox);
-            container.appendChild(item);
-        });
-        
-        renderPaginationControls(page, paginationControlsTop);
-        renderPaginationControls(page, paginationControlsBottom);
-    }
-
-    function renderPaginationControls(activePage, targetElement) {
-        targetElement.innerHTML = '';
-        const prevButton = document.createElement('button');
-        prevButton.textContent = '≪ 前へ';
-        prevButton.disabled = activePage === 1;
-        prevButton.onclick = () => changePage(activePage - 1);
-        targetElement.appendChild(prevButton);
-
-        for (let i = 1; i <= TOTAL_PAGES; i++) {
-            const button = document.createElement('button');
-            button.textContent = i;
-            if (i === activePage) button.classList.add('active');
-            button.onclick = () => changePage(i);
-            targetElement.appendChild(button);
-        }
-
-        const nextButton = document.createElement('button');
-        nextButton.textContent = '次へ ≫';
-        nextButton.disabled = activePage === TOTAL_PAGES;
-        nextButton.onclick = () => changePage(activePage + 1);
-        targetElement.appendChild(nextButton);
-    }
-
-    function changePage(page) {
-        if (page >= 1 && page <= TOTAL_PAGES) {
-            currentPage = page;
-            displayList(currentPage);
-            mainTitle.scrollIntoView({ behavior: 'smooth' });
-        }
-    }
-
-    displayList(currentPage);
-</script>
-
-<div class="footer-section">
-    <p><b>今回のアプリは如何だったでしょうか？<br>
-    他にも使えるアプリ、脳トレができるゲームや趣味に俳句、和歌などが利用できるサイトをご案内します。</b></p>
-    <p><b>また大事な記録をサーバーに残せるサイトで、何かあった時に情報開示も指定できるサイトです。<br>
-    スマホのID、PWを記録しておくと安心です。</b></p>
-
-    <img src="https://life-supporter.jp/sp/hxySQ4ff/ct5NJq8Z/images/XS012085.jpg" class="info-image">
-
-    <div style="font-size: 24px; font-weight: bold; margin: 20px 0;">
-        以下より体験版をご確認ください。
-    </div>
-
-    <img src="https://life-supporter.jp/sp/hxySQ4ff/ct5NJq8Z/images/XS012100.jpg" style="width: 200px;">
-    
-    <div style="margin-top: 10px;">
-        <a href="https://life-supporter.jp/lp/HRSuykFf" style="font-size: 20px; color: #007bff; text-decoration: none; font-weight: bold;">
-            https://life-supporter.jp/lp/HRSuykFf
-        </a>
-    </div>
+<!-- ボタン配置 -->
+<div id="buttons" style="margin-top:10px;">
+  <!-- 1行目 -->
+  <div style="display:flex;justify-content:center;gap:10px;margin-bottom:6px;">
+    <button id="startBtn" onclick="startGame()">スタート</button>
+    <button id="stopGameBtn" onclick="stopGame()">ストップ</button>
+  </div>
+  <!-- 2行目 -->
+  <div style="display:flex;justify-content:center;gap:10px;margin-bottom:6px;">
+    <button id="resetBtn" onclick="resetGame()">ゲームリセット</button>
+    <button id="stopBtn" onclick="toggleStop()">一時停止</button>
+  </div>
+  <!-- 3行目 -->
+  <div style="display:flex;justify-content:center;gap:10px;margin-bottom:6px;">
+    <button id="dropBtn" onclick="dropAction()" disabled="">落とす</button>
+  </div>
+  <!-- 4行目 -->
+  <div style="display:flex;justify-content:center;gap:10px;margin-bottom:6px;">
+    <button id="modeBtn" onclick="toggleMode()">通常モード</button>
+    <button id="randomBtn" onclick="toggleRandom()">順番モード</button>
+  </div>
 </div>
 
-</body>
-</html>
+<br>
+
+体操時間（分）<br>
+<input id="timeSlider" type="number" min="1" max="60" step="1" value="10" class="slider">
+<br>
+<span id="timeValue">10分</span>
+
+<br><br>
+
+音声スピード<br>
+<input id="speedSlider" type="range" min="0.6" max="2.0" step="0.1" value="1.0" class="slider">
+
+<br><br>
+
+<div style="font-size:18px;line-height:1.6;text-align:left;max-width:280px;margin:auto;">
+このゲームは、体操をしながら楽しめるレクリエーションゲームです。<br><br>
+思い思いに体を動かしてください。イメージした動きを自分なりに動かしてみましょう。またグループでしたら形を合わせて体操するのもいいですね。<br><br>
+音声で次の体操が案内され、回数も読み上げられます。<br>
+体操が終わったら「落とす」ボタンを押すと、果物が落ちてゲームが進みます。<br><br>
+同じ果物がぶつかると合体して大きくなり、スコアが増えます。<br>
+体操とゲームを同時に楽しみながら、無理なく体を動かしましょう。
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+
+<script>
+// 既存JSは変更せず、スマホ停止時の音声停止を強化
+const {Engine,Render,World,Bodies,Events}=Matter;
+const engine=Engine.create();
+const world=engine.world;
+
+const render=Render.create({
+  canvas:document.getElementById("world"),
+  engine:engine,
+  options:{width:320,height:450,wireframes:false,background:"#fff"}
+});
+
+Engine.run(engine);
+Render.run(render);
+
+World.add(world,[
+  Bodies.rectangle(160,450,320,40,{isStatic:true}),
+  Bodies.rectangle(0,225,40,450,{isStatic:true}),
+  Bodies.rectangle(320,225,40,450,{isStatic:true})
+]);
+
+const exercises=[
+"かかと上げ10回","肩回し10回","足踏み15回",
+"手を上げて背筋を伸ばす10回","首の横倒し左右10回",
+"足首くるくる左10回","足首くるくる右10回",
+"グーパー運動20回","胸を広げ閉じる10回",
+"首回し10回","手振り足踏み10回",
+"手を腰に上を見る10回","手ぶらぶら20回",
+"腕左右振り10回","足屈伸10回"
+];
+const lastExercise="深呼吸5回";
+
+let exerciseList=[]; let exerciseIndex=0;
+let score=0;
+let autoMode=false; let randomMode=false; let isPaused=false;
+let voiceSpeed=1.0; let gameRunning=false;
+let timerMinutes=10; let timeLeft=0; let timerInterval=null;
+let wakeLock=null;
+
+const scoreDiv=document.getElementById("score");
+const dropBtn=document.getElementById("dropBtn");
+const modeBtn=document.getElementById("modeBtn");
+const randomBtn=document.getElementById("randomBtn");
+const stopBtn=document.getElementById("stopBtn");
+const slider=document.getElementById("speedSlider");
+const timeSlider=document.getElementById("timeSlider");
+const timeValue=document.getElementById("timeValue");
+
+slider.addEventListener("input",function(){voiceSpeed=parseFloat(this.value);});
+timeSlider.addEventListener("input",function(){timerMinutes=parseInt(this.value);timeValue.innerText=timerMinutes+"分";});
+
+async function keepAwake(){if("wakeLock" in navigator){try{wakeLock=await navigator.wakeLock.request("screen");}catch(e){console.log(e);}}}
+function releaseWakeLock(){if(wakeLock){wakeLock.release();wakeLock=null;}}
+
+function shuffle(array){for(let i=array.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[array[i],array[j]]=[array[j],array[i]];}return array;}
+function prepareExercises(){if(randomMode){exerciseList=shuffle([...exercises]);}else{exerciseList=[...exercises];}exerciseList.push(lastExercise);exerciseIndex=0;}
+function toggleMode(){autoMode=!autoMode;modeBtn.innerText=autoMode?"自動モード":"通常モード";}
+function toggleRandom(){randomMode=!randomMode;randomBtn.innerText=randomMode?"ランダムモード":"順番モード";prepareExercises();}
+function updateScore(){scoreDiv.innerText="Score:"+score;}
+
+function speak(text){return new Promise(resolve=>{if(!window.speechSynthesis){resolve();return;}const u=new SpeechSynthesisUtterance(text);u.lang="ja-JP";u.rate=voiceSpeed;u.onend=async ()=>{while(isPaused){await new Promise(r=>setTimeout(r,100));}resolve();};speechSynthesis.speak(u);});}
+
+function startTimer(){timeLeft=timerMinutes*60;updateTimer();timerInterval=setInterval(()=>{timeLeft--;updateTimer();if(timeLeft<=0){clearInterval(timerInterval);finishGame();}},1000);}
+function updateTimer(){let m=Math.floor(timeLeft/60);let s=timeLeft%60;document.getElementById("timer").innerText="残り時間:"+m+":"+(s<10?"0"+s:s);}
+async function finishGame(){stopGame();await speak("終了しました。お疲れ様です。");}
+
+function toggleStop(){
+  isPaused=!isPaused;
+  if(isPaused){
+    speechSynthesis.pause();
+    stopBtn.innerText="一時停止中（解除）";
+  }else{
+    speechSynthesis.resume();
+    stopBtn.innerText="一時停止";
+  }
+}
+
+// 停止ボタンでスタートも停止＋音声も停止
+function stopGame(){
+  clearInterval(timerInterval);
+  releaseWakeLock();
+  speechSynthesis.cancel();
+  exerciseIndex=0;
+  gameRunning=false;
+  document.getElementById("exerciseText").innerText="スタートを押してください";
+  dropBtn.disabled=true;
+}
+
+async function nextExercise(){if(!gameRunning) return;if(exerciseIndex>=exerciseList.length){prepareExercises();}const text=exerciseList[exerciseIndex];exerciseIndex++;document.getElementById("exerciseText").innerText=text;dropBtn.disabled=true;await speak("次は "+text+" です");let m=text.match(/(\d+)/);if(m){let max=parseInt(m[1]);for(let i=1;i<=max;i++){await speak(i);await new Promise(r=>setTimeout(r,700/voiceSpeed));}}await speak("はいオッケーです");if(autoMode){setTimeout(()=>{dropAction();},800);}else{await speak("落とすボタンを押してください");dropBtn.disabled=false;}}
+
+function dropAction(){if(!gameRunning) return;const x=160+(Math.random()*40-20);World.add(world,createFruit(x,0));dropBtn.disabled=true;setTimeout(nextExercise,1200);}
+
+function createFruit(x,level){const data=[{r:16,c:"#ff595e"},{r:22,c:"#ffca3a"},{r:30,c:"#8ac926"},{r:40,c:"#1982c4"},{r:55,c:"#6ab04c"}];return Bodies.circle(x,30,data[level].r,{restitution:0.3,friction:0.1,label:"fruit_"+level,render:{fillStyle:data[level].c}});}
+
+Events.on(engine,"collisionStart",event=>{event.pairs.forEach(pair=>{const a=pair.bodyA;const b=pair.bodyB;if(a.label===b.label && a.label.startsWith("fruit_")){const level=Number(a.label.split("_")[1]);World.remove(world,[a,b]);if(level<4){World.add(world,createFruit((a.position.x+b.position.x)/2,level+1));score+=(level+1)*2;updateScore();}}});});
+
+function startGame(){if(gameRunning) return;gameRunning=true;keepAwake();prepareExercises();nextExercise();updateScore();startTimer();}
+
+function resetGame(){
+  if(gameRunning) return;
+  World.clear(world,false);
+  World.add(world,[
+    Bodies.rectangle(160,450,320,40,{isStatic:true}),
+    Bodies.rectangle(0,225,40,450,{isStatic:true}),
+    Bodies.rectangle(320,225,40,450,{isStatic:true})
+  ]);
+  score=0;
+  updateScore();
+  document.getElementById("exerciseText").innerText="スタートを押してください";
+}
+</script>
+
+
+<p><br></p>
+<span style="font-size: 18px;"><b>今回のアプリは如何だったでしょうか？他にも使えるアプリ、脳トレができるゲームや趣味に俳句、和歌などが利用できるサイトをご案内します。また大事な記録をサーバーに残せるサイトで、何かあった時に情報開示も指定できるサイトです。スマホのID、PWを記録しておくと安心です。</b></span><p><br></p>
+<p><span style="font-size: 18px;"><b></b></span>
+
+<img src="https://life-supporter.jp/sp/hxySQ4ff/ct5NJq8Z/images/XS012085.jpg" style="display: block; margin: auto;"><br></p><p><br></p>
+<span style="font-size: 24px;"><div style="text-align: center;"><b>以下より体験版をご確認ください。</b></div>
+</span><p style="text-align: center; "><img src="https://life-supporter.jp/sp/hxySQ4ff/ct5NJq8Z/images/XS012100.jpg" style="width: 200px;"></p>
+<div style="text-align: center;"><a href="https://life-supporter.jp/lp/HRSuykFf" style="background-color: rgb(255, 255, 255); font-family: &quot;Hiragino Kaku Gothic Pro&quot;, &quot;Noto Sans JP&quot;, sans-serif;"><span style="font-size: 20px; color: rgb(0, 0, 255);">https://life-supporter.jp/lp/HRSuykFf</span></a></div>
+<p><br></p>
